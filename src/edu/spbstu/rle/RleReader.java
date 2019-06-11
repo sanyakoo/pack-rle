@@ -5,13 +5,13 @@ import java.io.Reader;
 
 public class RleReader extends Reader {
 
+    public static final int BUF_SIZE = 1024;
     private StringBuilder sb = new StringBuilder();
     private Reader reader;
 
     private int curInt;
-    private char ch;
 
-    private char[] buf = new char[1024];
+    private char[] buf = new char[BUF_SIZE];
 
     public RleReader(Reader reader) {
         this.reader = reader;
@@ -28,10 +28,15 @@ public class RleReader extends Reader {
                 if (Character.isDigit(c)) {
                     curInt = (curInt * 10) + Character.getNumericValue(c);
                 } else {
-                    for (int j = 0; j < curInt; j++) {
+                    // for sequences without counter:
+                    if (curInt == 0) {
                         sb.append(c);
+                    } else { // with counter:
+                        for (int j = 0; j < curInt; j++) {
+                            sb.append(c);
+                        }
+                        curInt = 0;
                     }
-                    curInt = 0;
                 }
             }
         }
@@ -43,10 +48,7 @@ public class RleReader extends Reader {
 
     @Override
     public void close() throws IOException {
-
+        this.reader.close();
     }
 
-    public String getData() {
-        return sb.toString();
-    }
 }

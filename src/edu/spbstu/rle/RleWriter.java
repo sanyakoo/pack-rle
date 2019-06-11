@@ -3,11 +3,18 @@ package edu.spbstu.rle;
 import java.io.IOException;
 import java.io.Writer;
 
+/**
+ * RLE encoder. Writes encoded text to underlying stream
+ */
 public class RleWriter extends Writer {
 
-    private StringBuilder sb = new StringBuilder();
+    private Writer writer;
     private Character curChar = null;
     private int counter = 0;
+
+    public RleWriter(Writer writer) {
+        this.writer = writer;
+    }
 
     @Override
     public void write(char[] cbuf, int off, int len) throws IOException {
@@ -19,8 +26,7 @@ public class RleWriter extends Writer {
                 if (curChar.equals(cbuf[i])) {
                     counter++;
                 } else {
-                    sb.append(counter);
-                    sb.append(curChar);
+                    appendEncodedSequence(counter, curChar);
                     curChar = cbuf[i];
                     counter = 1;
                 }
@@ -28,17 +34,25 @@ public class RleWriter extends Writer {
         }
     }
 
+    private void appendEncodedSequence(int counter, char curChar) throws IOException {
+        if (counter > 2) {
+            writer.append("" + counter);
+            writer.append(curChar);
+        } else {
+            // if sequence consist of 1 or 2 symbols:
+            for (int j = 0; j < counter; j++) {
+                writer.append(curChar);
+            }
+        }
+    }
+
     @Override
     public void flush() throws IOException {
+        writer.flush();
     }
 
     @Override
     public void close() throws IOException {
-        sb.append(counter);
-        sb.append(curChar);
-    }
-
-    public String getData() {
-        return sb.toString();
+        appendEncodedSequence(counter, curChar);
     }
 }

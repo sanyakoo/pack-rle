@@ -1,19 +1,25 @@
 package edu.spbstu.rle;
 
-import java.io.*;
-import java.util.Scanner;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.io.Writer;
 
 public class Main {
 
 
-    private static final String EXT = ".rle";
-    public static final int BUF_SIZ = 1024;
+    public static final String EXT = ".rle";
+    public static final String UNPACKED_EXT = ".unpacked";
+    private static final int BUF_SIZE = 1024;
 
     private enum Command {PACK, UNPACK}
 
-    public static void main(String[] args) {
+    public static void main(String... args) {
         if (args.length >= 2) {
-            Command command = Command.PACK;
+            Command command;
             String cmdOption = args[0];
             switch (cmdOption) {
                 case "-z":
@@ -38,7 +44,7 @@ public class Main {
                 }
             } else {
                 inputFileName = args[1];
-                outputFileName = inputFileName + EXT;
+                outputFileName = inputFileName + ((command == Command.PACK)? EXT: UNPACKED_EXT);
             }
 
             switch (command) {
@@ -55,23 +61,20 @@ public class Main {
         }
     }
 
-    private static void pack(String inputFileName, String outputFileName) {
-
-
-
+    public static void pack(String inputFileName, String outputFileName) {
         StringBuilder sb = new StringBuilder();
-        int bufSiz = BUF_SIZ;
-        char[] buf = new char[bufSiz];
+        int bufSize = BUF_SIZE;
+        char[] buf = new char[bufSize];
         try (Reader r = new FileReader(inputFileName)) {
-            RleWriter rleWriter = new RleWriter();
-            try(RleWriter rleWriter1 = rleWriter) {
+            StringWriter rleSb = new StringWriter();
+            try(Writer rleWriter = new RleWriter(rleSb)) {
                 int read;
-                while ((read = r.read(buf, 0, bufSiz)) != -1) {
-                    rleWriter1.write(buf, 0, read);
+                while ((read = r.read(buf, 0, bufSize)) != -1) {
+                    rleWriter.write(buf, 0, read);
                     sb.append(buf, 0, read);
                 }
             }
-            String rleEncoded = rleWriter.getData();
+            String rleEncoded = rleSb.toString();
             String plainStr = sb.toString();
             if (rleEncoded.length() >= plainStr.length()) {
                 saveToFile('p', plainStr, outputFileName);
@@ -97,7 +100,7 @@ public class Main {
         }
     }
 
-    private static void unpack(String inputFileName, String outputFileName) {
+    public static void unpack(String inputFileName, String outputFileName) {
         StringBuilder sb = new StringBuilder();
 
         try (Reader r = new FileReader(inputFileName)) {
@@ -105,12 +108,13 @@ public class Main {
 
             Reader reader = r;
             if (mode == 'z') {
+                // erapping reader with RLE reader to
                 reader = new RleReader(r);
             }
-            int bufSiz = BUF_SIZ;
-            char[] buf = new char[bufSiz];
+            int bufSize = BUF_SIZE;
+            char[] buf = new char[bufSize];
             int read;
-            while ((read = reader.read(buf, 0, bufSiz)) != -1) {
+            while ((read = reader.read(buf, 0, bufSize)) != -1) {
                 sb.append(buf, 0, read);
             }
 
